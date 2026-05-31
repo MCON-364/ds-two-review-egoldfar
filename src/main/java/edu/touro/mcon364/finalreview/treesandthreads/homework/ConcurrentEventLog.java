@@ -5,8 +5,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.*;
 
-import javafx.scene.web.WebHistory.Entry;
-
 /**
  * Homework 3 - Concurrent Event Log (ConcurrentSkipListMap + ExecutorService)
  *
