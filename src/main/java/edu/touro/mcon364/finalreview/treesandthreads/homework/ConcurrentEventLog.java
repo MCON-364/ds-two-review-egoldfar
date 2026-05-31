@@ -5,6 +5,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.*;
 
+import javafx.scene.web.WebHistory.Entry;
+
 /**
  * Homework 3 - Concurrent Event Log (ConcurrentSkipListMap + ExecutorService)
  *
@@ -55,7 +57,7 @@ public class ConcurrentEventLog {
      * @param message   event description
      */
     public void logEvent(long timestamp, String message) {
-        // TODO
+        log.put(timestamp * 1_000_000L + sequence.getAndIncrement(), message);
     }
 
     /**
@@ -70,7 +72,16 @@ public class ConcurrentEventLog {
      */
     public void runConcurrentSources(List<String> sources, int eventsEach)
             throws InterruptedException {
-        // TODO
+        ExecutorService executor = Executors.newFixedThreadPool(sources.size());
+        for (String source : sources) {
+            executor.submit(() -> {
+                for (int i = 0; i < eventsEach; i++) {
+                    logEvent(System.currentTimeMillis(), source + "-" + i);
+                }
+            });
+        }
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
     }
 
     /**
@@ -78,24 +89,31 @@ public class ConcurrentEventLog {
      *
      */
     public List<String> getEventsAfter(long timestamp) {
-        // TODO
-        return List.of();
+        return log.entrySet().stream()
+                .filter(e -> e.getKey() > timestamp * 1_000_000L)
+                .map(Map.Entry::getValue)
+                .toList();
     }
 
     /**
      * Returns all events in the timestamp range [from, to] inclusive, in order.
      */
     public List<String> getEventsBetween(long from, long to) {
-        // TODO
-        return List.of();
+        return log.entrySet().stream()
+                .filter(e -> e.getKey() >= from * 1_000_000L && e.getKey() <= to * 1_000_000L +sequence.get())
+                .map(Map.Entry::getValue)
+                .toList();
     }
 
     /**
      * Returns the n most recent events as an immutable list, newest first.
      */
     public List<String> getMostRecentN(int n) {
-        // TODO
-        return List.of();
+        return log.entrySet().stream()
+        .sorted((e1, e2) -> Long.compare(e2.getKey(), e1.getKey()))
+        .limit(n)
+        .map(Map.Entry::getValue)
+        .toList();
     }
 
     /** Returns the total number of logged events. */
