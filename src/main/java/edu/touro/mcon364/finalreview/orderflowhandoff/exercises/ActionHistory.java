@@ -1,6 +1,9 @@
 package edu.touro.mcon364.finalreview.orderflowhandoff.exercises;
 
-import edu.touro.mcon364.finalreview.model.Action;import java.util.Optional;
+import edu.touro.mcon364.finalreview.model.Action;
+import java.util.Optional;
+import java.util.ArrayDeque;
+import java.util.function.Consumer;
 
 /**
  * In-class Exercise 1 — Action History
@@ -29,27 +32,39 @@ import edu.touro.mcon364.finalreview.model.Action;import java.util.Optional;
  */
 public class ActionHistory {
 
+    ArrayDeque<Action> undo = new ArrayDeque<>();
+    ArrayDeque<Action> redo = new ArrayDeque<>();
+
+
     public void perform(Action action) {
-        // TODO: implement based on the requirements above
+        System.out.print(action.description() + "Has been performed.");
+        undo.push(action);
+        redo.clear();
     }
 
     public Optional<Action> undo() {
-        // TODO: implement based on the requirements above
+        if (!undo.isEmpty()) {
+            System.out.print(undo.peek().description() + "Has been undone.");
+            redo.push(undo.peek());
+            return Optional.of(undo.pop());
+        }
         return Optional.empty();
     }
 
     public Optional<Action> redo() {
-        // TODO: implement based on the requirements above
+        if (!redo.isEmpty()) {
+            System.out.print(redo.peek().description() + "Has been redone.");
+            undo.push(redo.peek());
+            return Optional.of(redo.pop());
+        }
         return Optional.empty();
     }
 
     public int getUndoCount() {
-        // TODO: implement based on the requirements above
-        return 0;
+        return undo.size();
     }
 
     public int getRedoCount() {
-        // TODO: implement based on the requirements above
-        return 0;
+        return redo.size();
     }
 }

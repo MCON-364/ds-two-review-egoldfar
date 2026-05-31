@@ -2,7 +2,12 @@ package edu.touro.mcon364.finalreview.orderflowhandoff.homework;
 
 import edu.touro.mcon364.finalreview.model.SensorReading;
 
+import java.util.ArrayList;
 import java.util.DoubleSummaryStatistics;
+import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Collections;
 
 /**
  * Homework 2 — Sensor reading processor.
@@ -43,13 +48,24 @@ import java.util.DoubleSummaryStatistics;
  */
 public class SensorProcessor {
 
+    ArrayBlockingQueue<SensorReading> waiting = new ArrayBlockingQueue<>(1000);
+    ExecutorService executor;
+    AtomicInteger totalProcessed = new AtomicInteger(0);
+    List<SensorReading> completed = Collections.synchronizedList(new ArrayList<>());
+    boolean running = false;
+
     /**
      * Accept one sensor reading for processing.
      *
      * @param reading the reading to process later
      */
     public void submit(SensorReading reading) {
-        // TODO: decide where submitted readings should be stored
+        waiting.add(reading);
+        executor.submit( () -> {
+            System.out.println(waiting.peek());
+            totalProcessed.incrementAndGet();
+            completed.add(waiting.poll());
+        });
     }
 
     /**
@@ -59,8 +75,11 @@ public class SensorProcessor {
      * @throws IllegalArgumentException if workerCount is not positive
      */
     public void start(int workerCount) {
-        // TODO: validate workerCount
-        // TODO: start the requested number of workers
+        if (workerCount <= 0) {
+            throw new IllegalArgumentException("workerCount must be greater than 0");
+        }
+        executor = Executors.newFixedThreadPool(workerCount);
+        running = true;
     }
 
     /**
@@ -71,7 +90,7 @@ public class SensorProcessor {
      * eventually exit when the processor is stopping and no work remains.
      */
     private void workerLoop() {
-        // TODO: implement the worker behavior
+
     }
 
     /**
@@ -80,16 +99,18 @@ public class SensorProcessor {
      * @throws InterruptedException if the calling thread is interrupted while waiting
      */
     public void stop() throws InterruptedException {
-        // TODO: signal that work should stop
-        // TODO: wait for all workers to finish
+        if (running) {
+            running = false;
+            workerLoop();
+            executor.awaitTermination(2L, TimeUnit.SECONDS);
+        }
     }
 
     /**
      * Return the number of readings processed so far.
      */
     public int getTotalProcessed() {
-        // TODO: return the processed count safely
-        return 0;
+        return totalProcessed.get();
     }
 
     /**
@@ -99,7 +120,8 @@ public class SensorProcessor {
      * DoubleSummaryStatistics object.
      */
     public DoubleSummaryStatistics getStats() {
-        // TODO: calculate or return the current statistics safely
-        return new DoubleSummaryStatistics();
+        return completed.stream()
+                .mapToDouble(SensorReading::value)
+                .summaryStatistics();
     }
 }
